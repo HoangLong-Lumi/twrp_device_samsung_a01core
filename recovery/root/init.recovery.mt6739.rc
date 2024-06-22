@@ -1,7 +1,37 @@
 on init
     exec u:r:recovery:s0 -- /sbin/mntl_link
 
+on post-fs
+## TEEGRIS service
+    mkdir /mnt/vendor 0700 system system
+    mkdir /mnt/vendor/efs 0700 system system
+    mkdir /mnt/vendor/efs/tee 0700 system system
+    mkdir /dev/socket/iwt 0770 system system
+    mkdir /dev/socket/iwt/ca 0770 system system
+    start tz_service
+
+on property:vendor.tzdaemon=Ready
+    setprop vendor.TEEGRIS.loaded true
+    write /proc/iccc_ready 1
+    start tzts_service
+
 on post-fs-data
 # Support A/B feature for boot region
     symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
+## TEEGRIS service
+    mkdir /data/vendor/tee 0700 system system
+
+service tz_service /system/bin/tzdaemon
+    class core
+    user root
+    group root readproc
+    disabled
+    seclabel u:r:recovery:s0
+
+service tzts_service /system/bin/tzts_daemon
+    class core
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
